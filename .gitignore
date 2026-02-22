@@ -60,3 +60,5 @@ target/
 # IDE & Editors
 .idea/
 *.sw[po]
+.env
+venv/

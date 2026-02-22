@@ -17,6 +17,24 @@ pip install payaza
 
 ## Quick start
 
+## Sandbox mode
+
+```python
+client = Payaza(api_key="your-test-key", sandbox=True)
+```
+
+---
+
+## Development
+
+```bash
+git clone https://github.com/0xAfterSnow/payaza-python
+cd payaza-python
+pip install -e ".[dev]"
+pytest --cov=payaza
+```
+
+---
 
 ## Contributing
 
