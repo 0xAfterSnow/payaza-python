@@ -14,7 +14,67 @@ from payaza.resources.base import Resource
 class Collections(Resource):
     """Interact with the Payaza Collections API."""
 
+    # ------------------------------------------------------------------
+    # Mobile Payments (Apple Pay / Google Pay)
+    # ------------------------------------------------------------------
 
+    def initiate_mobile_payment(
+        self,
+        *,
+        amount: float,
+        first_name: str,
+        last_name: str,
+        payment_option: str,
+        description: str,
+        transaction_reference: str,
+        country_code: str,
+        currency_code: str,
+        redirect_url: Optional[str] = None,
+        cancel_url: Optional[str] = None,
+        error_url: Optional[str] = None,
+        tenant_id: Optional[str] = "test",  # if provided, overrides the default api_key
+    ) -> dict:
+        """
+        Initiate an Apple Pay or Google Pay collection.
+
+        Args:
+            amount: The amount to be paid.
+            first_name: Customer's first name.
+            last_name: Customer's last name.
+            payment_option: Either ``"APPLEPAY"`` or ``"GOOGLEPAY"``.
+            description: The description of this transaction.
+            transaction_reference: The unique identifier of the transaction.
+            country_code: The country code (ISO 3166-1 alpha-3), e.g. ``"USA"``.
+            currency_code: Currency code, e.g. ``"GBP"``, ``"EUR"``, ``"USD"``.
+            redirect_url: URL to redirect on successful payment (optional).
+            cancel_url: URL to redirect when user cancels (optional).
+            error_url: URL to redirect on failed payment (optional).
+
+        Returns:
+            dict: API response containing the payment initiation result.
+        """
+
+        headers = self._client._default_headers()
+        if tenant_id:
+            headers["X-TenantID"] = tenant_id
+        payload = {
+            "amount": amount,
+            "first_name": first_name,
+            "last_name": last_name,
+            "payment_option": payment_option,
+            "description": description,
+            "transaction_reference": transaction_reference,
+            "country_code": country_code,
+            "currency_code": currency_code,
+        }
+        if redirect_url is not None:
+            payload["redirect_url"] = redirect_url
+        if cancel_url is not None:
+            payload["cancel_url"] = cancel_url
+        if error_url is not None:
+            payload["error_url"] = error_url
+
+        return self._client.post("/live/merchant-collection/mobile_payment/initiate", payload)
     # ------------------------------------------------------------------
     # Card Collections
     # ------------------------------------------------------------------

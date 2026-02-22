@@ -2,7 +2,7 @@
 Example: Full Card Collection Flow
 
 Run with:
-    python examples/collect_payment.py
+    python examples/card_collection.py
 """
 
 import os

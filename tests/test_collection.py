@@ -125,3 +125,80 @@ def test_charge_card_error_raises(client, base_url):
             expiry_year="32",
             security_code="000",
         )
+
+
+# --------------------------------------------------
+# Initiate Mobile Payment (Apple Pay / Google Pay)
+# --------------------------------------------------
+
+@rsps.activate
+def test_initiate_mobile_payment_apple(client, base_url):
+    rsps.add(
+        rsps.POST,
+        f"{base_url}/live/merchant-collection/mobile_payment/initiate",
+        json={"status": "success", "payment_url": "https://payments.payaza.africa/applepay/123"},
+        status=200,
+    )
+
+    resp = client.collections.initiate_mobile_payment(
+        amount=49.99,
+        first_name="John",
+        last_name="Doe",
+        payment_option="APPLEPAY",
+        description="Digital goods",
+        transaction_reference="MOB-001",
+        country_code="USA",
+        currency_code="USD",
+        redirect_url="https://example.com/success",
+        cancel_url="https://example.com/cancel",
+        error_url="https://example.com/error",
+    )
+
+    assert resp["status"] == "success"
+    assert "payment_url" in resp
+
+
+@rsps.activate
+def test_initiate_mobile_payment_google(client, base_url):
+    rsps.add(
+        rsps.POST,
+        f"{base_url}/live/merchant-collection/mobile_payment/initiate",
+        json={"status": "success", "payment_url": "https://payments.payaza.africa/googlepay/456"},
+        status=200,
+    )
+
+    resp = client.collections.initiate_mobile_payment(
+        amount=79.99,
+        first_name="Jane",
+        last_name="Smith",
+        payment_option="GOOGLEPAY",
+        description="Subscription",
+        transaction_reference="MOB-002",
+        country_code="GBR",
+        currency_code="GBP",
+    )
+
+    assert resp["status"] == "success"
+    assert "payment_url" in resp
+
+
+@rsps.activate
+def test_initiate_mobile_payment_error_raises(client, base_url):
+    rsps.add(
+        rsps.POST,
+        f"{base_url}/live/merchant-collection/mobile_payment/initiate",
+        json={"message": "Invalid payment option"},
+        status=400,
+    )
+
+    with pytest.raises(PayazaAPIError):
+        client.collections.initiate_mobile_payment(
+            amount=10.00,
+            first_name="Error",
+            last_name="User",
+            payment_option="INVALID",
+            description="Test error",
+            transaction_reference="MOB-003",
+            country_code="XXX",
+            currency_code="USD",
+        )

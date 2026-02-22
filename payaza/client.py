@@ -12,6 +12,7 @@ from requests import Response, Session
 
 from payaza.exceptions import PayazaAPIError, PayazaAuthError, PayazaNetworkError
 from payaza.resources.collections import Collections
+from payaza.resources.virtual_accounts import VirtualAccounts
 
 logger = logging.getLogger("payaza")
 
@@ -59,6 +60,7 @@ class Payaza:
 
         # Resources
         self.collections = Collections(self)
+        self.virtual_accounts = VirtualAccounts(self)
 
     def _default_headers(self) -> dict:
         token = base64.b64encode(self.api_key.encode()).decode()
