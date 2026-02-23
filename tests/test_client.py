@@ -19,3 +19,5 @@ def test_live_base_url():
 def test_resources_are_attached(client):
     assert hasattr(client, "collections")
     assert hasattr(client, "virtual_accounts")
+    assert hasattr(client, "payouts")
+    assert hasattr(client, "accounts")

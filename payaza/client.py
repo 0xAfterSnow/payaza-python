@@ -13,6 +13,8 @@ from requests import Response, Session
 from payaza.exceptions import PayazaAPIError, PayazaAuthError, PayazaNetworkError
 from payaza.resources.collections import Collections
 from payaza.resources.virtual_accounts import VirtualAccounts
+from payaza.resources.payouts import Payouts
+from payaza.resources.accounts import Accounts
 
 logger = logging.getLogger("payaza")
 
@@ -61,6 +63,8 @@ class Payaza:
         # Resources
         self.collections = Collections(self)
         self.virtual_accounts = VirtualAccounts(self)
+        self.payouts = Payouts(self)
+        self.accounts = Accounts(self)
 
     def _default_headers(self) -> dict:
         token = base64.b64encode(self.api_key.encode()).decode()
@@ -100,13 +104,15 @@ class Payaza:
             raise PayazaNetworkError(str(exc)) from exc
         return self._handle_response(resp)
 
-    def post(self, path: str, payload: Optional[dict] = None) -> dict:
+    def post(self, path: str, payload: Optional[dict] = None, headers: Optional[dict] = None) -> dict:
+        final_headers = self._default_headers()
+        if headers:
+            final_headers.update(headers)
         try:
-            resp = self._session.post(self._url(path), json=payload or {}, timeout=self.timeout)
+            resp = self._session.post(self._url(path), json=payload or {}, timeout=self.timeout, headers=final_headers)
         except requests.exceptions.RequestException as exc:
             raise PayazaNetworkError(str(exc)) from exc
         return self._handle_response(resp)
-
     def put(self, path: str, payload: Optional[dict] = None) -> dict:
         try:
             resp = self._session.put(self._url(path), json=payload or {}, timeout=self.timeout)
