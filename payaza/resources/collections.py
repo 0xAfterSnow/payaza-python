@@ -75,6 +75,8 @@ class Collections(Resource):
             payload["error_url"] = error_url
 
         return self._client.post("/live/merchant-collection/mobile_payment/initiate", payload)
+
+
     # ------------------------------------------------------------------
     # Card Collections
     # ------------------------------------------------------------------
@@ -189,3 +191,166 @@ class Collections(Resource):
             "refund_transaction_reference": refund_transaction_reference,
         }
         return self._client.post("/live/card/card_charge/refund_status", {"service_payload": service_payload})
+
+    # ------------------------------------------------------------------
+    # Card Tokenization
+    # ------------------------------------------------------------------
+
+    # Create Card Token
+    def tokenize_card(
+        self,
+        *,
+        card_number: str,
+        expiry_month: str,
+        expiry_year: str,
+        cvv: str,
+        merchant_reference: str,
+        currency: str,
+        first_name: str,
+        last_name: str,
+        email_address: str,
+        callback_url: Optional[str] = None,
+    ) -> dict:
+        """
+        Tokenize a card and perform a verification charge (automatically refunded within 1‑3 days).
+
+        Tokenization and verification charge are separate operations:
+        - If tokenization succeeds (``success: true``), you receive a token (the ``merchant_reference``)
+          even if the verification charge fails.
+        - If the verification charge fails, the token is still valid for future charges.
+        - Always check the ``verification_charge_status`` field in the response.
+
+        Args:
+            card_number: The card number.
+            expiry_month: Card expiry month in MM format (e.g., ``"12"``).
+            expiry_year: Card expiry year in YYYY format (e.g., ``"2025"``).
+            cvv: Card CVV.
+            merchant_reference: Your unique reference for this tokenization.
+                This value becomes the token and must be used as ``payaza_token_reference``
+                when charging the card later.
+            currency: Currency code for the verification charge (e.g., ``"NGN"``, ``"USD"``).
+            first_name: Cardholder's first name.
+            last_name: Cardholder's last name.
+            email_address: Cardholder's email address.
+            callback_url: URL to redirect after 3DS authentication (optional).
+
+        Returns:
+            dict: API response containing:
+                - ``success`` (bool): Whether tokenization succeeded.
+                - ``token`` (str or None): The token (same as merchant_reference) if created.
+                - ``verification_charge_status`` (str): ``"success"``, ``"failed"``, ``"pending"``, or ``"not_attempted"``.
+                - ``message`` (str): Human‑readable description.
+                - Possible error codes in case of failure.
+        """
+        payload = {
+            "card_number": card_number,
+            "expiry_month": expiry_month,
+            "expiry_year": expiry_year,
+            "cvv": cvv,
+            "merchant_reference": merchant_reference,
+            "currency": currency,
+            "first_name": first_name,
+            "last_name": last_name,
+            "email_address": email_address,
+        }
+        if callback_url is not None:
+            payload["callback_url"] = callback_url
+
+        return self._client.post("/live/card/merchant/tokenization/token", payload)
+
+    # Charge with Token
+    def charge_card_with_token(
+        self,
+        *,
+        transaction_reference: str,
+        amount: float,
+        currency: str,
+        payaza_token_reference: str,
+        description: Optional[str] = None,
+        callback_url: Optional[str] = None,
+    ) -> dict:
+        """
+        Charge a card using a previously generated token reference.
+
+        When using a token, the system automatically retrieves the stored card details.
+        If 3DS is required (``do3dsAuth: true``), display the ``threeDsHtml`` in an iframe or popup
+        and handle the callback. Tokens can be reused multiple times.
+
+        Args:
+            transaction_reference: Your unique identifier for this transaction (max 15 chars).
+            amount: The amount to charge.
+            currency: Currency code (e.g., ``"NGN"``, ``"USD"``).
+            payaza_token_reference: The token reference obtained from tokenization.
+            description: Optional description of the transaction.
+            callback_url: Optional URL for 3DS callback (must accept POST).
+
+        Returns:
+            dict: API response containing:
+                - ``paymentCompleted`` (bool): True if payment successful.
+                - ``amountPaid`` (float): Total amount charged.
+                - ``valueAmount`` (float): Net amount after fees.
+                - ``rrn`` (str): Retrieval Reference Number for successful transactions.
+                - ``do3dsAuth`` (bool): Whether 3DS authentication is required.
+                - ``threeDsHtml`` (str): HTML for 3DS iframe/popup (if do3dsAuth is true).
+        """
+        service_payload = {
+            "transaction_reference": transaction_reference,
+            "amount": amount,
+            "currency": currency,
+            "payaza_token_reference": payaza_token_reference,
+        }
+        if description is not None:
+            service_payload["description"] = description
+        if callback_url is not None:
+            service_payload["callback_url"] = callback_url
+
+        return self._client.post(
+            "/live/card/card_charge/",
+            {"service_payload": service_payload}
+        )
+
+    # List Tokens
+    def list_tokens(
+        self,
+        *,
+        start_at: int = 1,
+        limit: int = 50,
+        start_date: Optional[str] = None,
+        end_date: Optional[str] = None,
+    ) -> dict:
+        """
+        Retrieve all tokens created by your merchant account with pagination and optional date filtering.
+
+        Args:
+            start_at: The page number to retrieve (default: 1).
+            limit: Number of records per page (default: 50).
+            start_date: Optional start date for filtering (format: YYYY-MM-DD).
+            end_date: Optional end date for filtering (format: YYYY-MM-DD).
+
+        Returns:
+            dict: API response containing a list of tokens and pagination metadata.
+        """
+        params = {
+            "start_at": start_at,
+            "limit": limit,
+        }
+        if start_date is not None:
+            params["start_date"] = start_date
+        if end_date is not None:
+            params["end_date"] = end_date
+
+        return self._client.get("/live/card/merchant/tokenization/tokens", params=params)
+
+    # Delete Token
+    def delete_token(self, token_id: str) -> dict:
+        """
+        Delete a token using its token ID (the value returned from tokenization, not the merchant_reference).
+
+        Args:
+            token_id: The token ID assigned to the card (from the create token response).
+
+        Returns:
+            dict: API response confirming deletion.
+        """
+        path = f"/live/card/merchant/tokenization/token/{token_id}"
+        return self._client.delete(path)
