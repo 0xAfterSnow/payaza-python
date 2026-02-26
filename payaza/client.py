@@ -15,6 +15,7 @@ from payaza.resources.collections import Collections
 from payaza.resources.virtual_accounts import VirtualAccounts
 from payaza.resources.payouts import Payouts
 from payaza.resources.accounts import Accounts
+from payaza.resources.transactions import Transactions
 
 logger = logging.getLogger("payaza")
 
@@ -65,6 +66,7 @@ class Payaza:
         self.virtual_accounts = VirtualAccounts(self)
         self.payouts = Payouts(self)
         self.accounts = Accounts(self)
+        self.transactions = Transactions(self)
 
     def _default_headers(self) -> dict:
         token = base64.b64encode(self.api_key.encode()).decode()
@@ -97,9 +99,9 @@ class Payaza:
             )
         return data
 
-    def get(self, path: str, params: Optional[dict] = None) -> dict:
+    def get(self, path: str, params: Optional[dict] = None, headers: Optional[dict] = None) -> dict:
         try:
-            resp = self._session.get(self._url(path), params=params, timeout=self.timeout)
+            resp = self._session.get(self._url(path), params=params, timeout=self.timeout, headers=headers)
         except requests.exceptions.RequestException as exc:
             raise PayazaNetworkError(str(exc)) from exc
         return self._handle_response(resp)
@@ -113,16 +115,22 @@ class Payaza:
         except requests.exceptions.RequestException as exc:
             raise PayazaNetworkError(str(exc)) from exc
         return self._handle_response(resp)
-    def put(self, path: str, payload: Optional[dict] = None) -> dict:
+    def put(self, path: str, payload: Optional[dict] = None, headers: Optional[dict] = None) -> dict:
+        final_headers = self._default_headers()
+        if headers:
+            final_headers.update(headers)
         try:
-            resp = self._session.put(self._url(path), json=payload or {}, timeout=self.timeout)
+            resp = self._session.put(self._url(path), json=payload or {}, timeout=self.timeout, headers=final_headers)
         except requests.exceptions.RequestException as exc:
             raise PayazaNetworkError(str(exc)) from exc
         return self._handle_response(resp)
 
-    def delete(self, path: str) -> dict:
+    def delete(self, path: str, headers: Optional[dict] = None) -> dict:
+        final_headers = self._default_headers()
+        if headers:
+            final_headers.update(headers)
         try:
-            resp = self._session.delete(self._url(path), timeout=self.timeout)
+            resp = self._session.delete(self._url(path), timeout=self.timeout, headers=final_headers)
         except requests.exceptions.RequestException as exc:
             raise PayazaNetworkError(str(exc)) from exc
         return self._handle_response(resp)

@@ -32,7 +32,6 @@ class Collections(Resource):
         redirect_url: Optional[str] = None,
         cancel_url: Optional[str] = None,
         error_url: Optional[str] = None,
-        tenant_id: Optional[str] = "test",  # if provided, overrides the default api_key
     ) -> dict:
         """
         Initiate an Apple Pay or Google Pay collection.
@@ -54,9 +53,6 @@ class Collections(Resource):
             dict: API response containing the payment initiation result.
         """
 
-        headers = self._client._default_headers()
-        if tenant_id:
-            headers["X-TenantID"] = tenant_id
         payload = {
             "amount": amount,
             "first_name": first_name,

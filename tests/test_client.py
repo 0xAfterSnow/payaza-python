@@ -21,3 +21,4 @@ def test_resources_are_attached(client):
     assert hasattr(client, "virtual_accounts")
     assert hasattr(client, "payouts")
     assert hasattr(client, "accounts")
+    assert hasattr(client, "transactions")
